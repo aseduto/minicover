@@ -143,6 +143,34 @@ namespace MiniCover
                 });
             });
 
+            commandLineApplication.Command("coverallreport", command =>
+            {
+                command.Description = "Write a coverall-formatted JSON report to folder";
+
+                var workDirOption = CreateWorkdirOption(command);
+                var coverageFileOption = CreateCoverageFileOption(command);
+                var thresholdOption = CreateThresholdOption(command);
+                var outputOption = command.Option("--output", "Output file for coverall report [default: coverall.json]", CommandOptionType.SingleValue);
+                var coverall_job_id = command.Option("--job", "Define service_job_id in coverall json" , CommandOptionType.SingleValue);
+                var coverall_service_name = command.Option("--servicename", "Define service_name in coverall json" , CommandOptionType.SingleValue);
+                //var coverall_post = command.Option("--post", "If set post to coverall" , CommandOptionType.SingleValue);
+                
+                command.HelpOption("-h | --help");
+
+                command.OnExecute(() =>
+                {
+                    UpdateWorkingDirectory(workDirOption);
+
+                    var coverageFile = GetCoverageFile(coverageFileOption);
+                    var threshold = GetThreshold(thresholdOption);
+                    var result = LoadCoverageFile(coverageFile);
+                    var output = GetXmlReportOutput(outputOption);
+                    CoverallsReport report = new CoverallsReport(output, coverall_job_id.Value(), coverall_service_name.Value());
+                    XmlReport.Execute(result, output, threshold);
+                    return 0;
+                });
+            });
+
             commandLineApplication.Command("reset", command =>
             {
                 command.Description = "Reset hits count";

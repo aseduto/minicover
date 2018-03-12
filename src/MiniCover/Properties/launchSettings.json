@@ -2,7 +2,8 @@
   "profiles": {
     "MiniCover": {
       "commandName": "Project",
-      "commandLineArgs": "instrument --workdir ../../ --sources test/**/*.cs --assemblies test/**/*.dll"
+      "commandLineArgs": "htmlreport",
+      "workingDirectory": "A:\\alessandro\\My Alx\\src\\tmp\\spa.core"
     }
   }
 }
