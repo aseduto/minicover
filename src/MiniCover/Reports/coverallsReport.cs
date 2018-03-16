@@ -2,22 +2,29 @@
 using System.Collections.Generic;
 using MiniCover.Model;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 
 namespace MiniCover.Reports
 {
-    public class HtmlReport : BaseReport
+    public class CoverallsReport : BaseReport
     {
+      
         private const string BgColorGreen = "background-color: #D2EACE;";
         private const string BgColorRed = "background-color: #EACECC;";
         private const string BgColorBlue = "background-color: #EEF4ED;";
+
         private readonly string _output;
+        private readonly string _job_id;
+        private readonly string _service_name;
         private readonly StringBuilder _htmlReport;
 
-        public HtmlReport(string output)
+        public CoverallsReport(string output, string job_id, string service_name)
         {
             _output = output;
+            _job_id = job_id;
+            _service_name = service_name;
             _htmlReport = new StringBuilder();
         }
 
@@ -31,16 +38,19 @@ namespace MiniCover.Reports
 
         protected override void WriteReport(KeyValuePair<string, SourceFile> kvFile, int lines, int coveredLines, float coveragePercentage, ConsoleColor color)
         {
-            _htmlReport.AppendLine("<tr>");
-            _htmlReport.AppendLine($"<td><a href=\"{kvFile.Key}.html\">{kvFile.Key}</a></td>");
-            _htmlReport.AppendLine($"<td>{lines}</td>");
-            _htmlReport.AppendLine($"<td>{coveredLines}</td>");
-            _htmlReport.AppendLine($"<td style=\"{GetBgColor(color)}\">{coveragePercentage:P}</td>");
-            _htmlReport.AppendLine("</tr>");
+            
         }
 
         protected override void WriteDetailedReport(InstrumentationResult result, IDictionary<string, SourceFile> files, HashSet<int> hits)
         {
+            
+           string head = $@"{{ 
+                                ""service_job_id"": ""{_job_id}""
+                                , ""service_name"": ""{_service_name}""
+                                , ""source_files"": [
+                           ";
+            
+
             foreach (var kvFile in files)
             {
                 var lines = File.ReadAllLines(Path.Combine(result.SourcePath, kvFile.Key));
@@ -52,34 +62,34 @@ namespace MiniCover.Reports
                 using (var htmlWriter = (TextWriter)File.CreateText(fileName))
                 {
                     htmlWriter.WriteLine("<html>");
-                    htmlWriter.WriteLine("<body style=\"font-family: monospace;\">");
+                    htmlWriter.WriteLine("<body style=\"font-family: sans-serif;\">");
 
-                    var uncoveredLineNumbers = new HashSet<int>();
-                    var coveredLineNumbers = new HashSet<int>();
-                    foreach (var i in kvFile.Value.Instructions)
-                    {
-                        if (hits.Contains(i.Id))
-                        {
-                            coveredLineNumbers.UnionWith(i.GetLines());
-                        }
-                        else
-                        {
-                            uncoveredLineNumbers.UnionWith(i.GetLines());
-                        }
-                    }
+                    var instrumentedLineNumbers = kvFile.Value.Instructions
+                        .SelectMany(i => Enumerable.Range(i.StartLine, i.EndLine - i.StartLine + 1))
+                        .Distinct()
+                        .ToArray();
+
+                    var hitInstructions = kvFile.Value.Instructions.Where(h => hits.Contains(h.Id)).ToArray();
+                    var coveredLineNumbers = hitInstructions
+                        .SelectMany(i => Enumerable.Range(i.StartLine, i.EndLine - i.StartLine + 1))
+                        .Distinct()
+                        .ToArray();
 
                     var l = 0;
                     foreach (var line in lines)
                     {
                         l++;
                         var style = "white-space: pre;";
-                        if (coveredLineNumbers.Contains(l))
+                        if (instrumentedLineNumbers.Contains(l))
                         {
-                            style += BgColorGreen;
-                        }
-                        else if (uncoveredLineNumbers.Contains(l))
-                        {
-                            style += BgColorRed;
+                            if (coveredLineNumbers.Contains(l))
+                            {
+                                style += BgColorGreen;
+                            }
+                            else
+                            {
+                                style += BgColorRed;
+                            }
                         }
                         else
                         {
@@ -133,7 +143,6 @@ namespace MiniCover.Reports
             result.AppendLine("</body>");
             result.AppendLine("</html>");
 
-            Directory.CreateDirectory(_output);
             var fileName = Path.Combine(_output, "index.html");
             using (var htmlWriter = (TextWriter)File.CreateText(fileName))
             {

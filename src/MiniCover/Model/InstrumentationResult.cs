@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MiniCover.Model
 {
@@ -11,33 +12,26 @@ namespace MiniCover.Model
         [JsonProperty(Order = -2)]
         public string HitsFile { get; set; }
 
-        public List<string> ExtraAssemblies = new List<string>();
-        public Dictionary<string, InstrumentedAssembly> Assemblies = new Dictionary<string, InstrumentedAssembly>();
+        public HashSet<string> ExtraAssemblies = new HashSet<string>();
 
-        public InstrumentedAssembly AddInstrumentedAssembly(string name, string backupFile, string file, string backupPdbFile, string pdbFile)
+        public List<InstrumentedAssembly> Assemblies = new List<InstrumentedAssembly>();
+
+        public void AddInstrumentedAssembly(InstrumentedAssembly instrumentedAssembly)
         {
-            if (Assemblies.ContainsKey(name))
-            {
-                return Assemblies[name];
-            }
-
-            var instrumentedAssembly = new InstrumentedAssembly
-            {
-                BackupFile = backupFile,
-                File = file,
-                BackupPdbFile = backupPdbFile,
-                PdbFile = pdbFile
-            };
-
-            Assemblies.Add(name, instrumentedAssembly);
-
-            return instrumentedAssembly;
+            Assemblies.Add(instrumentedAssembly);
         }
 
         public void AddExtraAssembly(string file)
         {
-            if (!ExtraAssemblies.Contains(file))
-                ExtraAssemblies.Add(file);
+            ExtraAssemblies.Add(file);
+        }
+
+        public SortedDictionary<string, SourceFile> GetSourceFiles()
+        {
+            return new SortedDictionary<string, SourceFile>(Assemblies
+                .SelectMany(a => a.SourceFiles)
+                .GroupBy(kv => kv.Key, kv => kv.Value)
+                .ToDictionary(g => g.Key, g => SourceFile.Merge(g)));
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace MiniCover.Tests.NUnit
+﻿namespace MiniCover.Tests
 {
     public class AnotherClass
     {

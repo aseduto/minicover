@@ -1,5 +1,4 @@
 ﻿using System;
-using McMaster.Extensions.CommandLineUtils;
 
 namespace depsman
 {
@@ -7,26 +6,25 @@ namespace depsman
     {
         static int Main(string[] args)
         {
-            
-            var commandLineApplication = new CommandLineApplication();
-            commandLineApplication.Name = "depsman";
-            commandLineApplication.Description = "depsman";
+            int n = args.Length;
 
-            
-            commandLineApplication.Command("hello", command =>
+            Func<int> lambda = (() =>
             {
-                Console.WriteLine("Hello World!");
+                Console.WriteLine("LAMDA!");
+                return 0;
             });
 
-            commandLineApplication.HelpOption("-h | --help");
-
             try
-            {
+            {                
+                Console.WriteLine("TEST");
+                int r = 0;
 
-                int r = commandLineApplication.Execute(args);
+                if (0 < n)
+                {
+                    r = lambda();
+                }
 
                 return r;
-
             }
             catch (Exception ex)
             {

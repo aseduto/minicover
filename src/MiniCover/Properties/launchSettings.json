@@ -2,8 +2,8 @@
   "profiles": {
     "MiniCover": {
       "commandName": "Project",
-      "commandLineArgs": "htmlreport",
-      "workingDirectory": "A:\\alessandro\\My Alx\\src\\tmp\\spa.core"
+      "commandLineArgs": "report --workdir ./",
+      "workingDirectory": "A:\\Alessandro\\My Alx\\src\\tmp\\minicover\\depsman"
     }
   }
 }

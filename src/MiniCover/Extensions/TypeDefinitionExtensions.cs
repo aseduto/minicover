@@ -30,12 +30,13 @@ namespace MiniCover.Extensions
 
             foreach (var method in type.Methods.Where(m => m.HasBody))
                 yield return method;
-
+            /*
             foreach (var subType in type.NestedTypes)
             {
                 foreach (var method in GetAllMethods(subType))
                     yield return method;
             }
+            */
         }
     }
 }

@@ -143,18 +143,45 @@ namespace MiniCover
                 });
             });
 
-            commandLineApplication.Command("coverallreport", command =>
+
+            commandLineApplication.Command("opencoverreport", command =>
             {
-                command.Description = "Write a coverall-formatted JSON report to folder";
+                command.Description = "Write an OpenCover-formatted XML report to folder";
 
                 var workDirOption = CreateWorkdirOption(command);
                 var coverageFileOption = CreateCoverageFileOption(command);
                 var thresholdOption = CreateThresholdOption(command);
+
+                var outputOption = command.Option("--output", "Output file for OpenCover report [default: opencovercoverage.xml]", CommandOptionType.SingleValue);
+
+                command.HelpOption("-h | --help");
+
+                command.OnExecute(() =>
+                {
+                    UpdateWorkingDirectory(workDirOption);
+
+                    var coverageFile = GetCoverageFile(coverageFileOption);
+                    var threshold = GetThreshold(thresholdOption);
+                    var result = LoadCoverageFile(coverageFile);
+
+                    var output = GetOpenCoverXmlReportOutput(outputOption);
+                    OpenCoverReport.Execute(result, output, threshold);
+                    return 0;
+                });
+            });
+
+            commandLineApplication.Command("coverallreport", command =>
+            {
+                command.Description = "Write a coverall-formatted JSON report to folder";
                 var outputOption = command.Option("--output", "Output file for coverall report [default: coverall.json]", CommandOptionType.SingleValue);
-                var coverall_job_id = command.Option("--job", "Define service_job_id in coverall json" , CommandOptionType.SingleValue);
-                var coverall_service_name = command.Option("--servicename", "Define service_name in coverall json" , CommandOptionType.SingleValue);
+                var coverall_job_id = command.Option("--job", "Define service_job_id in coverall json", CommandOptionType.SingleValue);
+                var coverall_service_name = command.Option("--servicename", "Define service_name in coverall json", CommandOptionType.SingleValue);
                 //var coverall_post = command.Option("--post", "If set post to coverall" , CommandOptionType.SingleValue);
-                
+                var workDirOption = CreateWorkdirOption(command);
+                var coverageFileOption = CreateCoverageFileOption(command);
+                var thresholdOption = CreateThresholdOption(command);
+
+
                 command.HelpOption("-h | --help");
 
                 command.OnExecute(() =>
@@ -167,8 +194,10 @@ namespace MiniCover
                     var output = GetXmlReportOutput(outputOption);
                     CoverallsReport report = new CoverallsReport(output, coverall_job_id.Value(), coverall_service_name.Value());
                     XmlReport.Execute(result, output, threshold);
+
                     return 0;
                 });
+
             });
 
             commandLineApplication.Command("reset", command =>
@@ -244,6 +273,11 @@ namespace MiniCover
             return outputOption.Value() ?? "coverage.xml";
         }
 
+        private static string GetOpenCoverXmlReportOutput(CommandOption outputOption)
+        {
+            return outputOption.Value() ?? "opencovercoverage.xml";
+        }
+
         private static string GetCoverageFile(CommandOption coverageFileOption)
         {
             return coverageFileOption.Value() ?? "coverage.json";
@@ -284,7 +318,11 @@ namespace MiniCover
             var directoryInfoWrapper = new DirectoryInfoWrapper(currentDirectoryInfo);
 
             var fileMatchResult = matcher.Execute(directoryInfoWrapper);
-            return fileMatchResult.Files.Select(f => Path.GetFullPath(f.Path)).ToArray();
+            
+            return fileMatchResult.Files.Select(
+            
+                f => Path.GetFullPath(f.Path)
+            ).ToArray();
         }
 
         private static void SaveCoverageFile(string coverageFile, InstrumentationResult result)
