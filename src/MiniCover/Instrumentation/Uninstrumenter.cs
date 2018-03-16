@@ -22,6 +22,13 @@ namespace MiniCover.Instrumentation
                         File.Copy(assemblyLocation.BackupPdbFile, assemblyLocation.PdbFile, true);
                         File.Delete(assemblyLocation.BackupPdbFile);
                     }
+
+                    string deps = assemblyLocation.File.Replace(Path.GetExtension(assemblyLocation.File), ".deps.json");
+                    if (File.Exists(deps) && File.Exists(Instrumenter.GetBackupFile(assemblyLocation.File)))
+                    {
+                        File.Copy(Instrumenter.GetBackupFile(assemblyLocation.File), deps);
+                        File.Delete(Instrumenter.GetBackupFile(assemblyLocation.File));
+                    }
                 }
             }
 

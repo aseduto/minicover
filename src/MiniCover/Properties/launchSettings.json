@@ -2,7 +2,8 @@
   "profiles": {
     "MiniCover": {
       "commandName": "Project",
-      "commandLineArgs": "instrument --workdir ../../ --sources test/**/*.cs --assemblies test/**/*.dll"
+      "commandLineArgs": "instrument --workdir ./ --assemblies out/**/*.dll --sources *.cs",
+      "workingDirectory": "A:\\Alessandro\\My Alx\\src\\tmp\\sqlscripter\\src\\sqlscripter"
     }
   }
 }

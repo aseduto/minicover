@@ -82,6 +82,69 @@ namespace MiniCover.Instrumentation
             return true;
         }
 
+        private string AddDependencyToDepJson(string assemblyFile, string newDependencyPath)
+        {
+            Assembly dependency = Assembly.LoadFrom(newDependencyPath);
+            string dependencyAssemblyName = dependency.GetName().Name;
+            //string dependencyAssemblyVersion = dependency.GetName().Version.ToString();
+            string dependencyAssemblyVersion = System.Diagnostics.FileVersionInfo.GetVersionInfo(newDependencyPath).ProductVersion;
+
+            string deps = assemblyFile.Replace(Path.GetExtension(assemblyFile), ".deps.json");
+
+            if (!File.Exists(deps)
+                || File.Exists(GetBackupFile(deps))
+                )
+            {
+                return null;
+            }
+            else
+            {
+                JObject jsondeps = JObject.Parse(File.ReadAllText(deps));
+
+                JObject targets = (JObject)jsondeps["targets"];
+                    
+                string key = $"{dependencyAssemblyName}/{dependencyAssemblyVersion}";
+
+                JToken node = targets.First.First.First.First["dependencies"];
+
+                JToken deptoken = JToken.Parse($" {{ \"{dependencyAssemblyName}\": \"{dependencyAssemblyVersion}\" }} ");
+
+                if (null == node)
+                {
+                    JObject lib =  (JObject) targets.First.First.First.First;
+                    lib.AddFirst( new JProperty("dependencies", deptoken) );
+                }
+                else
+                {
+                    node.Last().AddAfterSelf(new JProperty(dependencyAssemblyName, dependencyAssemblyVersion));
+                }
+
+                node = targets[key];
+
+                if (null == node)
+                {
+                    JToken newdep = JToken.Parse($"{{ \"runtime\": {{\"{dependencyAssemblyName}\": {{}} }} }} ");
+                        
+                    JProperty libs = new JProperty(key, newdep);
+                        
+                    ((JObject)targets.First.First).Add( libs );
+                }
+
+                JObject libraries = (JObject)jsondeps["libraries"];
+
+                JToken libmin = JToken.Parse($"{{\"type\": \"reference\",\"serviceable\": false, \"sha512\": \"\" }}");
+
+                libraries.Add( new JProperty( key, libmin));
+
+                File.Copy(deps, GetBackupFile(deps));
+                                        
+                File.WriteAllText(deps, jsondeps.ToString());
+    
+            }
+
+            return deps;
+        }
+
         private void VisitAssemblyGroup(IEnumerable<string> assemblyFiles)
         {
             var firstAssemblyFile = assemblyFiles.First();
@@ -113,6 +176,7 @@ namespace MiniCover.Instrumentation
                     var dependencyAssemblyName = Path.GetFileName(dependencyPath);
                     var newDependencyPath = Path.Combine(assemblyDirectory, dependencyAssemblyName);
                     File.Copy(dependencyPath, newDependencyPath, true);
+                    AddDependencyToDepJson(assemblyFile, newDependencyPath);
                     result.AddExtraAssembly(newDependencyPath);
                 }
 
@@ -379,7 +443,7 @@ namespace MiniCover.Instrumentation
             return Path.ChangeExtension(assemblyFile, "pdb");
         }
 
-        private string GetBackupFile(string file)
+        internal static string GetBackupFile(string file)
         {
             return Path.ChangeExtension(file, $"uninstrumented{Path.GetExtension(file)}");
         }
